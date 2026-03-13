@@ -182,8 +182,10 @@ export const CONFIG = {
   llm: {
     defaultUrl: 'http://localhost:11434',  // ← Your Ollama URL
     defaultModel: 'llama3:8b',             // ← Your model
-    batchSize: 5,
     timeout: 300000,
+    stdoutLimit: 1000,                     // ← Max stdout chars per step in prompt
+    stderrLimit: 500,                      // ← Max stderr chars per step in prompt
+    logsLimit: 3000,                       // ← Max container log chars in prompt
   },
 };
 

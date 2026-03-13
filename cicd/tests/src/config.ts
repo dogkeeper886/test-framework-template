@@ -28,8 +28,10 @@ export const CONFIG = {
   llm: {
     defaultUrl: 'http://localhost:11434',
     defaultModel: 'llama3:8b',
-    batchSize: 5,
     timeout: 300000,
+    stdoutLimit: 1000,
+    stderrLimit: 500,
+    logsLimit: 3000,
   },
   
   // Log collection settings
