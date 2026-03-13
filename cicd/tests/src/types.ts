@@ -42,6 +42,8 @@ export interface TestCase {
   steps: TestStep[];
   /** Human-readable criteria for LLM judge evaluation */
   criteria: string;
+  /** Short goal statement for LLM judge context (optional) */
+  goal?: string;
 }
 
 // ============================================
