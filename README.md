@@ -4,7 +4,7 @@ A reusable, YAML-driven test framework with dual-judge verification (Simple + LL
 
 ## Project Goal
 
-This test framework design template was extracted from the [ollama37](https://github.com/dogkeeper886/ollama37) project to provide a **reusable testing foundation** that can be adopted by any project.
+This test framework design template was extracted from production MCP server projects to provide a **reusable testing foundation** that can be adopted by any project.
 
 ### Why This Framework?
 
@@ -40,6 +40,8 @@ The framework is built around three core principles:
 - **Variable Capture**: Extract values from step output and pass to later steps via `{{variable}}`
 - **Dependency Resolution**: Tests can depend on other tests passing first
 - **Log Collection with Markers**: Precise extraction of logs per test from Docker streams
+- **MCP Client**: Test MCP server tools with configurable server command
+- **Claude Commands**: AI-assisted test authoring via `/ci-testcase`, `/ci-run`, `/add-tool`
 - **Installable Template**: Add to any project via `make install`
 - **Flexible Output**: Console (colored) and JSON formats for CI consumption
 
@@ -214,6 +216,44 @@ npm run list                # List available tests
 npm test -- --judge-url http://host:11434 --judge-model gemma3:12b
 ```
 
+## MCP Testing
+
+For MCP server projects, `mcp-client.ts` spawns your server and calls tools:
+
+```bash
+# Configure your server command
+export MCP_SERVER_COMMAND="node dist/mcpServer.js"
+
+# Test a tool directly
+npx tsx cicd/tests/src/mcp-client.ts get_venues '{}'
+
+# Use in YAML test cases
+```
+
+```yaml
+steps:
+  - name: Query venues
+    command: npx tsx cicd/tests/src/mcp-client.ts get_venues '{}'
+    expectPatterns:
+      - "totalCount"
+    rejectPatterns:
+      - "isError"
+```
+
+Requires `@modelcontextprotocol/sdk` (install in your project: `npm install @modelcontextprotocol/sdk`).
+
+## Claude Commands
+
+AI-assisted workflows via Claude Code slash commands:
+
+| Command | Purpose |
+|---------|---------|
+| `/ci-testcase` | Generate YAML test cases from requirements |
+| `/ci-run` | Execute tests with guided output |
+| `/add-tool` | Add new MCP tools following standard patterns |
+
+These are installed to `.claude/commands/` by `make install`.
+
 ## Writing Test Cases
 
 Create YAML files in `cicd/tests/testcases/<suite>/`:
@@ -287,6 +327,11 @@ MCP tool responses (double-encoded JSON in `content[0].text`) are automatically 
 
 ```
 your-project/
+├── CLAUDE.md                    # AI agent guidance
+├── .claude/commands/
+│   ├── ci-testcase.md           # /ci-testcase — generate test cases
+│   ├── ci-run.md                # /ci-run — execute tests
+│   └── add-tool.md              # /add-tool — add MCP tools
 ├── cicd/
 │   ├── tests/
 │   │   ├── src/
@@ -295,6 +340,7 @@ your-project/
 │   │   │   ├── types.ts
 │   │   │   ├── loader.ts
 │   │   │   ├── executor.ts
+│   │   │   ├── mcp-client.ts    # MCP tool client (optional)
 │   │   │   ├── log-collector.ts
 │   │   │   ├── judge/
 │   │   │   └── reporter/
