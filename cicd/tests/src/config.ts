@@ -39,6 +39,11 @@ export const CONFIG = {
     cleanupAge: 24 * 60 * 60 * 1000, // 24 hours
     maxBuffer: 50 * 1024 * 1024, // 50MB
   },
+
+  // MCP client settings (for projects using mcp-client.ts)
+  mcp: {
+    serverCommand: 'node dist/mcpServer.js', // Override via MCP_SERVER_COMMAND env var
+  },
 };
 
 /**

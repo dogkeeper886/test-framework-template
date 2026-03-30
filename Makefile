@@ -78,6 +78,15 @@ install: check
 	@# Copy GitHub workflows
 	@cp "$(TEMPLATE_DIR)/.github/workflows/"*.yml "$(TARGET)/.github/workflows/" 2>/dev/null || true
 
+	@# Copy CLAUDE.md if it exists
+	@if [ -f "$(TEMPLATE_DIR)/CLAUDE.md" ]; then cp "$(TEMPLATE_DIR)/CLAUDE.md" "$(TARGET)/CLAUDE.md"; fi
+
+	@# Copy Claude commands if they exist
+	@if [ -d "$(TEMPLATE_DIR)/.claude/commands" ]; then \
+		mkdir -p "$(TARGET)/.claude/commands"; \
+		cp "$(TEMPLATE_DIR)/.claude/commands/"*.md "$(TARGET)/.claude/commands/" 2>/dev/null || true; \
+	fi
+
 	@# Create .gitignore for results
 	@echo "*" > "$(TARGET)/cicd/results/.gitignore"
 	@echo "!.gitignore" >> "$(TARGET)/cicd/results/.gitignore"
