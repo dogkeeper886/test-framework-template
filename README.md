@@ -150,18 +150,28 @@ Use `--no-llm` to skip LLM judging for faster CI feedback when Ollama is unavail
 
 ## Quick Start
 
+### Recommended: Agent-Driven Install
+
+In your project directory, tell Claude Code:
+
+> Install the test framework from /path/to/test-framework-template
+
+Or use the slash command:
+
+```
+/install /path/to/test-framework-template
+```
+
+The agent will detect your project type (MCP server, Docker, etc.), ask configuration questions, and install only what you need with values pre-configured.
+
+### Alternative: Manual Install
+
 ```bash
-# Clone or download this template, then install to your project
 cd /path/to/test-framework-template
 make install TARGET=/path/to/your/project NAME=your-project
-
-# Example:
-make install TARGET=/home/user/src/my-app NAME=my-app
-
-# Then in your project
 cd /path/to/your/project/cicd/tests
 npm install
-npm test
+# Then edit config.ts manually
 ```
 
 ## Makefile Commands

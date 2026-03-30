@@ -4,7 +4,113 @@ Guidance for Claude Code when working on the test-framework-template.
 
 ## Project Overview
 
-Reusable, YAML-driven CI test framework with dual-judge verification (Simple + LLM). Installs into any project via `make install`. Part of the ai-qa-workflow ecosystem (Phase 5: Automate).
+Reusable, YAML-driven CI test framework with dual-judge verification (Simple + LLM). Part of the ai-qa-workflow ecosystem (Phase 5: Automate).
+
+## Installation
+
+Installation is agent-driven. When an AI agent reads this file, it should guide the user through installing the framework into their project.
+
+### Agent Installation Flow
+
+#### Phase 1: Orient
+
+Read this CLAUDE.md to understand available components. Each component is conditional:
+
+| Component | Files | When to include |
+|-----------|-------|----------------|
+| **Core framework** (always) | cli.ts, config.ts, types.ts, loader.ts, executor.ts | Always |
+| **Judges** (always) | judge/simple-judge.ts, judge/llm-judge.ts, judge/index.ts | Always |
+| **Reporters** (always) | reporter/console.ts, reporter/json.ts, reporter/index.ts | Always |
+| **Docker log collector** | log-collector.ts | If project uses Docker (docker-compose.yml exists) |
+| **MCP client** | mcp-client.ts | If project is an MCP server (`@modelcontextprotocol/sdk` in package.json) |
+| **Claude commands** | .claude/commands/{ci-testcase,ci-run,add-tool}.md | Recommended for all projects |
+| **GitHub workflows** | .github/workflows/{test-pipeline,test-suite}.yml | Optional |
+| **Example test cases** | testcases/{build,integration,e2e}/*.yml | Recommended for fresh install, skip for updates |
+| **Supporting files** | package.json, tsconfig.json, scripts/format-results.sh | Always |
+
+#### Phase 2: Detect Context
+
+Examine the user's current working directory:
+
+1. **Read package.json** (if it exists) → extract project name, check for `@modelcontextprotocol/sdk` in dependencies
+2. **Check for docker-compose.yml** → Docker project? Include log-collector.ts
+3. **Check for existing `cicd/tests/`** → update (preserve user's config.ts and test cases) vs fresh install
+4. **Check `.claude/commands/`** → what commands are already installed
+5. **If no project context detected**, ask the user what they're working on
+
+#### Phase 3: Ask the User
+
+Prompt for configuration (show defaults, let user override):
+
+1. **Project name** — default from package.json `name` field, or ask
+2. **Ollama URL** — default: `http://localhost:11434`
+3. **Ollama model** — default: `llama3:8b`
+4. **Include MCP client?** — auto-yes if MCP SDK detected, otherwise ask
+5. **Include Docker log collector?** — auto-yes if docker-compose detected, otherwise ask
+6. **Install Claude commands?** — recommend yes
+7. **Install example test cases?** — recommend yes for fresh install, skip for updates
+
+#### Phase 4: Install
+
+1. **Create directory structure:**
+   ```
+   cicd/tests/src/judge/
+   cicd/tests/src/reporter/
+   cicd/tests/testcases/{build,integration,e2e}/
+   cicd/scripts/
+   cicd/results/
+   ```
+
+2. **Copy selected files** from the template source directory into the target project
+
+3. **Adapt config.ts** with user's answers — replace placeholder values:
+   - `projectName: 'my-project'` → user's project name
+   - `sessionPrefix: 'test-session'` → `'{projectName}-session'`
+   - `llm.defaultUrl` → user's Ollama URL
+   - `llm.defaultModel` → user's model
+   - If MCP: set `mcp.serverCommand` to match their server
+
+4. **Adapt package.json** — if MCP client included, add `@modelcontextprotocol/sdk` to peerDependencies
+
+5. **Create .gitignore** in `cicd/results/`:
+   ```
+   *
+   !.gitignore
+   ```
+
+6. **Run `npm install`** in `cicd/tests/`
+
+#### Phase 5: Verify
+
+1. Run `cd cicd/tests && npm run build` — TypeScript must compile
+2. Run `npm run list` — test loader must work (shows example test cases if installed)
+3. If either fails, diagnose and fix before reporting success
+
+#### Phase 6: Report
+
+Show the user:
+- Summary of installed components (what was included/excluded and why)
+- Configuration values applied
+- Next steps:
+  - Write test cases in `cicd/tests/testcases/`
+  - Customize error patterns in `config.ts`
+  - Run tests: `cd cicd/tests && npm test -- --no-llm`
+
+### Updates
+
+To update an existing installation, run the same flow. The agent should:
+- Compare installed files against the template source (check for divergence)
+- Preserve the user's `config.ts` customizations, test cases, and error patterns
+- Only update framework files (judges, executor, loader, etc.)
+- Show what changed before applying updates
+
+### Manual Installation (Alternative)
+
+```bash
+make install TARGET=/path/to/project NAME=project-name
+cd /path/to/project/cicd/tests && npm install
+# Then manually edit config.ts
+```
 
 ## Core Commands
 
@@ -131,7 +237,7 @@ Edit `config.ts` per project:
 ## Development Guidelines
 
 - Keep everything configurable via `config.ts` — never hardcode project-specific values
-- Template files get installed via Makefile — update install target for new files
+- Template files are installed via agent-driven flow (see Installation section) or Makefile fallback
 - Follow existing TypeScript patterns (strict types, async/await)
 - Test suites are configurable via `SUITES` array in config.ts
 
