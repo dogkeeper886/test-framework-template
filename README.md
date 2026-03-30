@@ -174,12 +174,10 @@ npm install
 # Then edit config.ts manually
 ```
 
-## Makefile Commands
+Additional Makefile commands:
 
 ```bash
 make help                                    # Show usage
-make install TARGET=/path/to/project         # Install with default name
-make install TARGET=/path/to/project NAME=x  # Install with custom name
 make clean TARGET=/path/to/project           # Remove framework from project
 ```
 
