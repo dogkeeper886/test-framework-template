@@ -4,7 +4,7 @@ A reusable, YAML-driven test framework with dual-judge verification (Simple + LL
 
 ## Project Goal
 
-This test framework design template was extracted from the [ollama37](https://github.com/dogkeeper886/ollama37) project to provide a **reusable testing foundation** that can be adopted by any project.
+This test framework design template was extracted from production MCP server projects to provide a **reusable testing foundation** that can be adopted by any project.
 
 ### Why This Framework?
 
