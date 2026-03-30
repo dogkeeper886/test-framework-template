@@ -20,6 +20,8 @@ export interface TestStep {
   expectPatterns?: string[];
   /** Regex patterns that must NOT appear in stdout/stderr */
   rejectPatterns?: string[];
+  /** Capture variables from step output for use in later steps */
+  capture?: Record<string, string>;
 }
 
 /**
