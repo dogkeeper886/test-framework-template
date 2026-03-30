@@ -37,6 +37,7 @@ The framework is built around three core principles:
 
 - **Dual-Judge System**: Both simple (fast) and LLM (semantic) judges must pass
 - **YAML-Driven Tests**: Tests defined as configuration, not code
+- **Variable Capture**: Extract values from step output and pass to later steps via `{{variable}}`
 - **Dependency Resolution**: Tests can depend on other tests passing first
 - **Log Collection with Markers**: Precise extraction of logs per test from Docker streams
 - **Installable Template**: Add to any project via `make install`
@@ -240,6 +241,47 @@ steps:
 criteria: |
   Verify the project builds without errors.
 ```
+
+### Variable Capture
+
+Steps can capture values from JSON output and pass them to later steps using `{{variable}}` substitution:
+
+```yaml
+id: TC-INT-002
+name: Create and verify resource
+suite: integration
+goal: Verify resource creation and retrieval
+timeout: 30000
+dependencies: []
+
+steps:
+  - name: Create resource
+    command: curl -s -X POST http://localhost:3000/api/resources -d '{"name":"test"}'
+    expectPatterns:
+      - "id"
+    capture:
+      resourceId: "id"
+
+  - name: Verify resource exists
+    command: curl -s http://localhost:3000/api/resources/{{resourceId}}
+    expectPatterns:
+      - "test"
+
+criteria: |
+  Resource is created and can be retrieved by ID.
+```
+
+**Capture paths** support dot-notation and array find syntax:
+
+| Path | Resolves to |
+|------|------------|
+| `id` | `response.id` |
+| `data.name` | `response.data.name` |
+| `items[0].id` | First element's `id` |
+| `data[name=foo].id` | First element in `data` where `name === "foo"` |
+| `$[type=user].email` | Root array find where `type === "user"` |
+
+MCP tool responses (double-encoded JSON in `content[0].text`) are automatically unwrapped before capture.
 
 ## Directory Structure
 

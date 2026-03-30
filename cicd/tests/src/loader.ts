@@ -202,6 +202,7 @@ export class TestLoader {
         timeout: typeof step.timeout === 'number' ? step.timeout : undefined,
         expectPatterns: Array.isArray(step.expectPatterns) ? step.expectPatterns : undefined,
         rejectPatterns: Array.isArray(step.rejectPatterns) ? step.rejectPatterns : undefined,
+        capture: typeof step.capture === 'object' && step.capture !== null ? step.capture : undefined,
       });
     }
 
@@ -213,6 +214,7 @@ export class TestLoader {
       timeout: typeof raw.timeout === 'number' ? raw.timeout : CONFIG.defaultTimeout,
       dependencies: Array.isArray(raw.dependencies) ? raw.dependencies : [],
       steps,
+      goal: typeof raw.goal === 'string' ? raw.goal : undefined,
       criteria: typeof raw.criteria === 'string' ? raw.criteria : '',
     };
   }
