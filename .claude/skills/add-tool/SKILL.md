@@ -1,3 +1,9 @@
+---
+name: add-tool
+description: Add new MCP tools following standard patterns and guidelines
+user-invocable: true
+---
+
 # Add New MCP Tool
 
 Add a new MCP tool to this server following established patterns and guidelines.

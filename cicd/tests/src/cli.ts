@@ -32,6 +32,7 @@ program
   .description('Run test cases')
   .option('-s, --suite <suite>', 'Run only tests from this suite')
   .option('-i, --id <id>', 'Run only the test with this ID')
+  .option('-t, --tag <tag>', 'Run only tests with this tag')
   .option('--dry-run', 'Show what would run without executing', false)
   .option('--no-llm', 'Skip LLM judging (simple judge only)')
   .option('--judge-url <url>', 'Ollama URL for LLM judge', CONFIG.llm.defaultUrl)
@@ -59,6 +60,7 @@ program
     const config: RunConfig = {
       suite: options.suite,
       testId: options.id,
+      tag: options.tag,
       dryRun: options.dryRun,
       noLlm: !options.llm,
       judgeUrl: options.judgeUrl,
@@ -93,6 +95,10 @@ program
 
     if (config.testId) {
       filteredTestCases = filteredTestCases.filter((tc) => tc.id === config.testId);
+    }
+
+    if (config.tag) {
+      filteredTestCases = filteredTestCases.filter((tc) => tc.tags?.includes(config.tag!));
     }
 
     if (filteredTestCases.length === 0) {
@@ -183,6 +189,7 @@ program
   .command('list')
   .description('List available test cases')
   .option('-s, --suite <suite>', 'Filter by suite')
+  .option('-t, --tag <tag>', 'Filter by tag')
   .action(async (options) => {
     const testsDir = path.dirname(new URL(import.meta.url).pathname);
     const testcasesDir = path.join(testsDir, '..', 'testcases');
@@ -192,6 +199,10 @@ program
 
     if (options.suite) {
       testCases = testCases.filter((tc) => tc.suite === options.suite);
+    }
+
+    if (options.tag) {
+      testCases = testCases.filter((tc) => tc.tags?.includes(options.tag));
     }
 
     testCases = loader.sortByDependencies(testCases);
@@ -205,6 +216,9 @@ program
       for (const tc of cases) {
         console.log(`  ${tc.id}: ${tc.name}`);
         console.log(`    Priority: ${tc.priority}, Timeout: ${tc.timeout}ms`);
+        if (tc.tags && tc.tags.length > 0) {
+          console.log(`    Tags: ${tc.tags.join(', ')}`);
+        }
         if (tc.dependencies.length > 0) {
           console.log(`    Depends on: ${tc.dependencies.join(', ')}`);
         }

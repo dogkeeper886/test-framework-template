@@ -39,7 +39,7 @@ export class TestExecutor {
 
   private substituteVariables(command: string): string {
     return command.replace(/\{\{(\w+)\}\}/g, (match, varName) => {
-      const value = this.variables[varName];
+      const value = this.variables[varName] ?? process.env[varName];
       if (value === undefined) {
         this.progress(`    [WARN] Variable {{${varName}}} not found`);
         return match;

@@ -1,9 +1,15 @@
+---
+name: install
+description: Install test framework into a project with agent-driven configuration
+user-invocable: true
+---
+
 # Install Test Framework
 
 Install the dual-judge test framework into the current project.
 
 ```
-{{input}}
+$ARGUMENTS
 
 ## PURPOSE
 
@@ -29,7 +35,7 @@ Examine the current working directory:
 1. **Read `package.json`** — extract project name, check for `@modelcontextprotocol/sdk`
 2. **Check for `docker-compose.yml`** — Docker project?
 3. **Check for existing `cicd/tests/`** — fresh install or update?
-4. **Check `.claude/commands/`** — what's already installed?
+4. **Check `.claude/skills/`** — what skills are already installed?
 
 ### Step 3: Ask Configuration Questions
 
@@ -40,7 +46,7 @@ Prompt the user with detected defaults:
 - **Ollama model** — default: `llama3:8b`
 - **Include MCP client?** — auto-yes if MCP SDK detected
 - **Include Docker log collector?** — auto-yes if docker-compose found
-- **Install Claude commands?** — recommend yes
+- **Install Claude skills?** — recommend yes
 - **Install example test cases?** — yes for fresh install, ask for updates
 
 ### Step 4: Install
@@ -58,15 +64,16 @@ Prompt the user with detected defaults:
    - Reporters: `reporter/console.ts`, `reporter/json.ts`, `reporter/index.ts`
    - Supporting: `package.json`, `tsconfig.json`
    - Conditional: `log-collector.ts` (Docker), `mcp-client.ts` (MCP)
-   - Commands: `ci-testcase.md`, `ci-run.md`, `add-tool.md` (to `.claude/commands/`)
+   - Skills: `ci-testcase`, `ci-run`, `add-tool` (to `.claude/skills/`)
+   - Rules: `test-yaml-format.md`, `workflow-patterns.md` (to `.claude/rules/`)
    - Examples: test case YAML files (if selected)
    - Scripts: `format-results.sh`
 
 3. **Adapt config.ts** — replace placeholder values with user's answers:
-   - `projectName: 'my-project'` → actual project name
-   - `sessionPrefix: 'test-session'` → `'{name}-session'`
-   - `llm.defaultUrl` → user's Ollama URL
-   - `llm.defaultModel` → user's model
+   - `projectName: 'my-project'` -> actual project name
+   - `sessionPrefix: 'test-session'` -> `'{name}-session'`
+   - `llm.defaultUrl` -> user's Ollama URL
+   - `llm.defaultModel` -> user's model
 
 4. **Create `.gitignore`** in `cicd/results/`:
    ```
