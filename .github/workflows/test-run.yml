@@ -53,11 +53,14 @@ jobs:
 
       - name: Run tests
         id: run-tests
-        env:
-          LLM_JUDGE_URL: ${{ vars.LLM_JUDGE_URL || 'http://localhost:11434' }}
-          LLM_JUDGE_MODEL: ${{ vars.LLM_JUDGE_MODEL || inputs.judge_model }}
         run: |
           cd cicd/tests
+
+          # Set LLM judge env vars from repo variables (fall back to defaults)
+          export LLM_JUDGE_URL="${{ vars.LLM_JUDGE_URL }}"
+          export LLM_JUDGE_MODEL="${{ vars.LLM_JUDGE_MODEL }}"
+          [ -z "$LLM_JUDGE_URL" ] && export LLM_JUDGE_URL="http://localhost:11434"
+          [ -z "$LLM_JUDGE_MODEL" ] && export LLM_JUDGE_MODEL="${{ inputs.judge_model }}"
 
           # Build filter flags
           FILTER_FLAGS=""

@@ -37,12 +37,15 @@ The framework is built around three core principles:
 
 - **Dual-Judge System**: Both simple (fast) and LLM (semantic) judges must pass
 - **YAML-Driven Tests**: Tests defined as configuration, not code
+- **Tag-Based Filtering**: Filter tests by feature tag via `--tag` for per-feature CI workflows
 - **Variable Capture**: Extract values from step output and pass to later steps via `{{variable}}`
+- **Environment Variable Substitution**: Variables fall back to `process.env` for CI-friendly patterns
 - **Dependency Resolution**: Tests can depend on other tests passing first
 - **Log Collection with Markers**: Precise extraction of logs per test from Docker streams
 - **MCP Client**: Test MCP server tools with configurable server command
-- **Claude Commands**: AI-assisted test authoring via `/ci-testcase`, `/ci-run`, `/add-tool`
-- **Installable Template**: Add to any project via `make install`
+- **Claude Skills**: AI-assisted test authoring via `/ci-testcase`, `/ci-run`, `/add-tool`
+- **Per-Feature CI Workflows**: Composable GitHub Actions with reusable test runner
+- **Installable Template**: Add to any project via `/install` or `make install`
 - **Flexible Output**: Console (colored) and JSON formats for CI consumption
 
 ## Architecture
@@ -64,7 +67,7 @@ The framework is built around three core principles:
   │     TestLoader      │  • Parse YAML test definitions
   │     (loader.ts)     │  • Validate required fields
   └─────────┬───────────┘  • Resolve dependencies
-            │
+            │              • Filter by suite or tag
             ▼
   ┌─────────────────────┐
   │   Dependency Sort   │  • Topological sort by dependencies
@@ -80,7 +83,8 @@ The framework is built around three core principles:
             │  • Run shell commands    │  • docker compose logs
             │  • Capture stdout/stderr │  • Test markers
             │  • Check patterns        │  • Per-test extraction
-            │                          │
+            │  • Substitute variables  │
+            │    (captured + env vars) │
             ▼                          ▼
      ┌─────────────────────────────────────┐
      │            TestResult[]             │
@@ -96,12 +100,12 @@ The framework is built around three core principles:
 │    │      Simple Judge       │         │       LLM Judge         │          │
 │    │    (simple-judge.ts)    │         │    (llm-judge.ts)       │          │
 │    ├─────────────────────────┤         ├─────────────────────────┤          │
-│    │ ✓ Exit code == 0        │         │ ✓ Semantic analysis     │          │
-│    │ ✓ Expected patterns     │         │ ✓ Criteria evaluation   │          │
-│    │ ✓ No rejected patterns  │         │ ✓ Context understanding │          │
-│    │ ✓ No error patterns     │         │ ✓ Evidence extraction   │          │
+│    │ Exit code == 0          │         │ Semantic analysis       │          │
+│    │ Expected patterns       │         │ Criteria evaluation     │          │
+│    │ No rejected patterns    │         │ Context understanding   │          │
+│    │ No error patterns       │         │ Evidence extraction     │          │
 │    ├─────────────────────────┤         ├─────────────────────────┤          │
-│    │ Speed: ⚡ Milliseconds   │         │ Speed: 🐢 Seconds       │          │
+│    │ Speed: Milliseconds     │         │ Speed: Seconds          │          │
 │    │ Mode: Deterministic     │         │ Mode: AI-powered        │          │
 │    └───────────┬─────────────┘         └───────────┬─────────────┘          │
 │                │                                   │                         │
@@ -117,8 +121,8 @@ The framework is built around three core principles:
                     ┌────────────────────────┐
                     │       Reporters        │
                     ├────────────────────────┤
-                    │ • ConsoleReporter      │  Colored terminal output
-                    │ • JsonReporter         │  Structured JSON files
+                    │ ConsoleReporter        │  Colored terminal output
+                    │ JsonReporter           │  Structured JSON files
                     └────────────┬───────────┘
                                  │
                                  ▼
@@ -138,11 +142,11 @@ Traditional tests only check exit codes. A process can exit with code 0 but prod
 
 | Scenario | Exit Code | Simple Judge | LLM Judge |
 |----------|-----------|--------------|-----------|
-| Command fails | 1 | ❌ Catches | ❌ Catches |
-| "Error" in output | 0 | ❌ Catches | ❌ Catches |
-| Wrong output format | 0 | ✅ Misses | ❌ Catches |
-| Incomplete results | 0 | ✅ Misses | ❌ Catches |
-| Semantic mismatch | 0 | ✅ Misses | ❌ Catches |
+| Command fails | 1 | Catches | Catches |
+| "Error" in output | 0 | Catches | Catches |
+| Wrong output format | 0 | Misses | Catches |
+| Incomplete results | 0 | Misses | Catches |
+| Semantic mismatch | 0 | Misses | Catches |
 
 The LLM judge reads the criteria from YAML and evaluates whether the actual output semantically satisfies the requirements—catching failures that pattern matching alone would miss.
 
@@ -186,17 +190,20 @@ make clean TARGET=/path/to/project           # Remove framework from project
 Edit `cicd/tests/src/config.ts` in your project:
 
 ```typescript
+// Extend with custom suite names for your project
+export const SUITES: string[] = ['build', 'integration', 'e2e'];
+
 export const CONFIG = {
   projectName: 'your-project',
   
-  // Ollama LLM Judge settings
+  // LLM Judge settings (overridable via env vars)
   llm: {
-    defaultUrl: 'http://localhost:11434',  // ← Your Ollama URL
-    defaultModel: 'llama3:8b',             // ← Your model
+    defaultUrl: process.env.LLM_JUDGE_URL || 'http://localhost:11434',
+    defaultModel: process.env.LLM_JUDGE_MODEL || 'llama3:8b',
     timeout: 300000,
-    stdoutLimit: 1000,                     // ← Max stdout chars per step in prompt
-    stderrLimit: 500,                      // ← Max stderr chars per step in prompt
-    logsLimit: 3000,                       // ← Max container log chars in prompt
+    stdoutLimit: 1000,
+    stderrLimit: 500,
+    logsLimit: 3000,
   },
 };
 
@@ -208,6 +215,17 @@ export const ERROR_PATTERNS: RegExp[] = [
 ];
 ```
 
+### Environment Variables
+
+For CI environments, override LLM judge settings without editing source:
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `LLM_JUDGE_URL` | Ollama endpoint | `http://localhost:11434` |
+| `LLM_JUDGE_MODEL` | Model for judging | `llama3:8b` |
+
+**Tip:** If your project tests an Ollama instance (port 11434), run the LLM judge on a separate port (e.g., 11435) to avoid GPU memory contention.
+
 ## Running Tests
 
 ```bash
@@ -217,12 +235,61 @@ npm test                    # Run all tests with LLM judge
 npm test -- --no-llm        # Run without LLM (faster)
 npm test -- --suite build   # Run specific suite
 npm test -- --id TC-001     # Run specific test
+npm test -- --tag auth      # Run tests tagged 'auth'
 npm test -- --dry-run       # Preview what would run
 npm run list                # List available tests
+npm run list -- --tag auth  # List tests by tag
 
-# Override Ollama URL
+# Override Ollama settings via CLI
 npm test -- --judge-url http://host:11434 --judge-model gemma3:12b
 ```
+
+## CI Workflow Patterns
+
+The template includes composable GitHub Actions workflows:
+
+```
+.github/workflows/
+├── build.yml                # Standalone build step
+├── test-run.yml             # Reusable test runner (supports --tag and --suite)
+├── test-feature-example.yml # Example per-feature workflow (~25 lines)
+├── ci.yml                   # Full pipeline: build -> tests in parallel
+├── test-pipeline.yml        # Legacy suite-based pipeline
+└── test-suite.yml           # Legacy reusable suite runner
+```
+
+### Per-Feature Pattern (Recommended)
+
+Each feature gets a thin workflow file that delegates to `test-run.yml`:
+
+```yaml
+# .github/workflows/test-auth.yml
+name: "Test: Auth"
+on:
+  workflow_dispatch:
+    inputs:
+      judge_mode:
+        type: choice
+        options: ["simple", "dual"]
+  workflow_call:
+    inputs:
+      judge_mode:
+        type: string
+jobs:
+  test:
+    uses: ./.github/workflows/test-run.yml
+    with:
+      tag: auth
+      judge_mode: ${{ inputs.judge_mode }}
+```
+
+**Adding a new feature test:**
+1. Tag your test cases: `tags: [my-feature]`
+2. Copy `test-feature-example.yml` to `test-my-feature.yml`
+3. Change the `tag` value
+4. Add as a job in `ci.yml`
+
+Configure `LLM_JUDGE_URL` and `LLM_JUDGE_MODEL` as GitHub repository variables (`Settings > Variables > Actions`).
 
 ## MCP Testing
 
@@ -250,17 +317,19 @@ steps:
 
 Requires `@modelcontextprotocol/sdk` (install in your project: `npm install @modelcontextprotocol/sdk`).
 
-## Claude Commands
+## Claude Skills
 
 AI-assisted workflows via Claude Code slash commands:
 
-| Command | Purpose |
-|---------|---------|
+| Skill | Purpose |
+|-------|---------|
 | `/ci-testcase` | Generate YAML test cases from requirements |
 | `/ci-run` | Execute tests with guided output |
 | `/add-tool` | Add new MCP tools following standard patterns |
+| `/install` | Install framework into a project |
+| `/review-docs-privacy` | Review for security and documentation quality |
 
-These are installed to `.claude/commands/` by `make install`.
+These are installed to `.claude/skills/` by the install flow.
 
 ## Writing Test Cases
 
@@ -273,6 +342,7 @@ suite: build
 priority: 1
 timeout: 60000
 dependencies: []
+tags: [build, compile]
 
 steps:
   - name: Install dependencies
@@ -290,9 +360,19 @@ criteria: |
   Verify the project builds without errors.
 ```
 
+### Tags
+
+Tags enable per-feature filtering and CI workflow splitting:
+
+```yaml
+tags: [auth, api]          # Feature tags
+tags: [build, compile]     # Suite-aligned tags
+tags: [smoke]              # Test category tags
+```
+
 ### Variable Capture
 
-Steps can capture values from JSON output and pass them to later steps using `{{variable}}` substitution:
+Steps can capture values from JSON output and pass them to later steps using `{{variable}}` substitution. Variables resolve from captured step output first, then fall back to `process.env`:
 
 ```yaml
 id: TC-INT-002
@@ -301,6 +381,7 @@ suite: integration
 goal: Verify resource creation and retrieval
 timeout: 30000
 dependencies: []
+tags: [api, resources]
 
 steps:
   - name: Create resource
@@ -336,10 +417,14 @@ MCP tool responses (double-encoded JSON in `content[0].text`) are automatically 
 ```
 your-project/
 ├── CLAUDE.md                    # AI agent guidance
-├── .claude/commands/
-│   ├── ci-testcase.md           # /ci-testcase — generate test cases
-│   ├── ci-run.md                # /ci-run — execute tests
-│   └── add-tool.md              # /add-tool — add MCP tools
+├── .claude/
+│   ├── skills/                  # AI-assisted workflows
+│   │   ├── ci-testcase/         # /ci-testcase — generate test cases
+│   │   ├── ci-run/              # /ci-run — execute tests
+│   │   └── add-tool/            # /add-tool — add MCP tools
+│   └── rules/                   # Context-aware rules
+│       ├── test-yaml-format.md  # YAML schema reference
+│       └── workflow-patterns.md # CI workflow design patterns
 ├── cicd/
 │   ├── tests/
 │   │   ├── src/
@@ -362,8 +447,12 @@ your-project/
 │   │   └── format-results.sh
 │   └── results/
 └── .github/workflows/
-    ├── test-pipeline.yml
-    └── test-suite.yml
+    ├── build.yml                # Standalone build
+    ├── test-run.yml             # Reusable test runner
+    ├── test-feature-example.yml # Per-feature template
+    ├── ci.yml                   # Full pipeline orchestrator
+    ├── test-pipeline.yml        # Legacy pipeline
+    └── test-suite.yml           # Legacy suite runner
 ```
 
 ## License
