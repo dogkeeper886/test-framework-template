@@ -86,10 +86,16 @@ install: check
 	@# Copy CLAUDE.md if it exists
 	@if [ -f "$(TEMPLATE_DIR)/CLAUDE.md" ]; then cp "$(TEMPLATE_DIR)/CLAUDE.md" "$(TARGET)/CLAUDE.md"; fi
 
-	@# Copy Claude commands if they exist
-	@if [ -d "$(TEMPLATE_DIR)/.claude/commands" ]; then \
-		mkdir -p "$(TARGET)/.claude/commands"; \
-		cp "$(TEMPLATE_DIR)/.claude/commands/"*.md "$(TARGET)/.claude/commands/" 2>/dev/null || true; \
+	@# Copy Claude skills if they exist
+	@if [ -d "$(TEMPLATE_DIR)/.claude/skills" ]; then \
+		mkdir -p "$(TARGET)/.claude/skills"; \
+		cp -r "$(TEMPLATE_DIR)/.claude/skills/"* "$(TARGET)/.claude/skills/" 2>/dev/null || true; \
+	fi
+
+	@# Copy Claude rules if they exist
+	@if [ -d "$(TEMPLATE_DIR)/.claude/rules" ]; then \
+		mkdir -p "$(TARGET)/.claude/rules"; \
+		cp "$(TEMPLATE_DIR)/.claude/rules/"*.md "$(TARGET)/.claude/rules/" 2>/dev/null || true; \
 	fi
 
 	@# Create .gitignore for results
@@ -127,4 +133,8 @@ endif
 	@rm -rf "$(TARGET)/cicd"
 	@rm -f "$(TARGET)/.github/workflows/test-pipeline.yml"
 	@rm -f "$(TARGET)/.github/workflows/test-suite.yml"
+	@rm -f "$(TARGET)/.github/workflows/build.yml"
+	@rm -f "$(TARGET)/.github/workflows/test-run.yml"
+	@rm -f "$(TARGET)/.github/workflows/test-feature-example.yml"
+	@rm -f "$(TARGET)/.github/workflows/ci.yml"
 	@echo "Done."

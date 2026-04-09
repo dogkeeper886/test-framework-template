@@ -5,6 +5,7 @@ priority: 1
 timeout: 30000
 dependencies:
   - TC-BUILD-001
+tags: [integration, health]
 
 steps:
   - name: Start services

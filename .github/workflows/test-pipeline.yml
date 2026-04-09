@@ -1,3 +1,4 @@
+# Legacy — see ci.yml + test-run.yml for the per-feature workflow pattern
 name: Full Test Pipeline
 
 on:

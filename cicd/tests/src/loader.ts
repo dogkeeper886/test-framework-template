@@ -62,6 +62,14 @@ export class TestLoader {
   }
 
   /**
+   * Load test cases filtered by tag.
+   */
+  async loadByTag(tag: string): Promise<TestCase[]> {
+    const all = await this.loadAll();
+    return all.filter((tc) => tc.tags?.includes(tag));
+  }
+
+  /**
    * Sort test cases by dependencies using topological sort.
    * Tests with lower priority numbers run first within dependency constraints.
    */
@@ -213,6 +221,7 @@ export class TestLoader {
       priority: typeof raw.priority === 'number' ? raw.priority : 1,
       timeout: typeof raw.timeout === 'number' ? raw.timeout : CONFIG.defaultTimeout,
       dependencies: Array.isArray(raw.dependencies) ? raw.dependencies : [],
+      tags: Array.isArray(raw.tags) ? raw.tags.map(String) : [],
       steps,
       goal: typeof raw.goal === 'string' ? raw.goal : undefined,
       criteria: typeof raw.criteria === 'string' ? raw.criteria : '',

@@ -7,6 +7,7 @@ suite: build
 priority: 1
 timeout: 120000
 dependencies: []
+tags: [build, compile]
 
 steps:
   - name: Check Node.js version

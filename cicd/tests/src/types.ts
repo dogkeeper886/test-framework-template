@@ -40,6 +40,8 @@ export interface TestCase {
   timeout: number;
   /** Test IDs that must pass before this test runs */
   dependencies: string[];
+  /** Tags for filtering (e.g., feature name, capability area) */
+  tags?: string[];
   /** Test steps to execute */
   steps: TestStep[];
   /** Human-readable criteria for LLM judge evaluation */
@@ -217,6 +219,8 @@ export interface RunConfig {
   suite?: string;
   /** Filter by specific test ID */
   testId?: string;
+  /** Filter by tag */
+  tag?: string;
   /** Show what would run without executing */
   dryRun: boolean;
   /** Skip LLM judging (simple judge only) */

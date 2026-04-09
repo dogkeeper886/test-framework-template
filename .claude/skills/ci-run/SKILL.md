@@ -1,9 +1,15 @@
+---
+name: ci-run
+description: Execute test cases with dual-judge evaluation
+user-invocable: true
+---
+
 # Run Test Cases
 
 Execute test cases and evaluate results with the dual-judge system.
 
 ```
-{{input}}
+$ARGUMENTS
 
 ## PURPOSE
 
@@ -18,6 +24,7 @@ Run YAML test cases by executing commands and evaluating results against pattern
 Input can be:
 - A test ID (e.g., `TC-INT-001`) — run that specific test
 - A suite name (e.g., `integration`) — run all tests in that suite
+- A tag name (e.g., `auth`) — run all tests with that tag
 - Empty — run all tests
 
 Read YAML test case files from `cicd/tests/testcases/`.
@@ -34,7 +41,7 @@ If running a specific test that has dependencies, auto-include them.
 
 For each test case, for each step:
 
-1. **Substitute variables** — replace `{{varName}}` with captured values from previous steps
+1. **Substitute variables** — replace `{{varName}}` with captured values from previous steps (falls back to `process.env`)
 2. **Execute the command** specified in `command`
 3. **Capture the output** (stdout and stderr)
 4. **Check expectPatterns** — each regex must match somewhere in the output
@@ -82,8 +89,13 @@ npm test                        # All tests with LLM judge
 npm test -- --no-llm            # Without LLM judge
 npm test -- --suite integration # Specific suite
 npm test -- --id TC-INT-001     # Specific test
+npm test -- --tag auth          # Tests tagged 'auth'
 npm test -- --dry-run           # Preview only
 ```
+
+**Environment variables for CI:**
+- `LLM_JUDGE_URL` — Ollama endpoint (default: `http://localhost:11434`)
+- `LLM_JUDGE_MODEL` — Model for judging (default: `llama3:8b`)
 
 ---
 

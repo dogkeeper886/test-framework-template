@@ -1,3 +1,9 @@
+---
+name: review-docs-privacy
+description: Review codebase for documentation quality and information security
+user-invocable: true
+---
+
 # Review Guidelines
 
 Review the codebase for documentation quality and information security.
